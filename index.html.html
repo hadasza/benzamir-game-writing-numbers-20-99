@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a1128">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>משחק חלל לבן</title>
+    <link rel="manifest" href="#manifest">
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0a1128;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+        
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+        }
+        
+        .spaceship {
+            position: absolute;
+            bottom: 50px;
+            right: 20px;
+            width: 100px;
+            height: 100px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50 10 L70 50 L50 90 L30 50 Z" fill="%23e0e0e0" stroke="%23333" stroke-width="2"/><circle cx="50" cy="50" r="10" fill="%234287f5"/></svg>');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            animation: float 5s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .container {
+            background-color: rgba(10, 25, 47, 0.8);
+            padding: 20px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(65, 105, 225, 0.5);
+        }
+        
+        h1 {
+            color: #4169e1;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        
+        button {
+            background-color: #4169e1;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            min-height: 60px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        button:hover, button:active {
+            background-color: #5a7de1;
+        }
+        
+        .start-button {
+            font-size: 24px;
+            padding: 20px 40px;
+            background-color: #00cc44;
+            min-width: 200px;
+        }
+        
+        .continue-button {
+            background-color: #00cc44;
+            font-size: 22px;
+            min-width: 120px;
+        }
+        
+        .rest-button {
+            background-color: #e74c3c;
+            font-size: 22px;
+            min-width: 120px;
+        }
+        
+        .question {
+            font-size: 24px;
+            margin: 15px 0;
+            min-height: 60px;
+        }
+        
+        .answer-input {
+            font-size: 26px;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #4169e1;
+            width: 150px;
+            text-align: center;
+            margin-top: 20px;
+            direction: ltr;
+            -webkit-appearance: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .answer-input:focus {
+            outline: none;
+            border-color: #00cc44;
+            box-shadow: 0 0 8px rgba(0,204,68,0.5);
+        }
+        
+        /* Numeric keyboard for mobile */
+        .number-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .number-key {
+            font-size: 24px;
+            padding: 15px;
+            border: none;
+            background-color: #2c3e50;
+            color: white;
+            border-radius: 10px;
+            min-height: 60px;
+        }
+        
+        .delete-key {
+            grid-column: span 2;
+            background-color: #e74c3c;
+        }
+        
+        .submit-key {
+            grid-column: span 3;
+            background-color: #00cc44;
+        }
+        
+        .feedback {
+            font-size: 20px;
+            margin: 15px 0;
+            min-height: 30px;
+            color: #ffd700;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .visible {
+            display: block;
+        }
+        
+        .completion-message {
+            font-size: 26px;
+            color: #ffd700;
+            margin: 20px 0;
+        }
+        
+        .astronaut {
+            position: absolute;
+            left: 20px;
+            top: 80px;
+            width: 80px;
+            height: 80px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="40" r="20" fill="white" stroke="%23333" stroke-width="2"/><rect x="40" y="20" width="20" height="15" rx="5" fill="white" stroke="%23333" stroke-width="2"/><circle cx="50" cy="40" r="15" fill="%23c1e3ff"/><rect x="30" y="60" width="40" height="30" rx="10" fill="white" stroke="%23333" stroke-width="2"/><circle cx="40" cy="75" r="5" fill="%23333"/><circle cx="60" cy="75" r="5" fill="%23333"/></svg>');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            animation: astronautFloat 8s infinite ease-in-out;
+        }
+        
+        @keyframes astronautFloat {
+            0%, 100% { transform: translateY(0px) rotate(5deg); }
+            50% { transform: translateY(-20px) rotate(-5deg); }
+        }
+        
+        @media (max-height: 700px) {
+            .astronaut, .spaceship {
+                display: none;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 20px;
+                margin-bottom: 10px;
+            }
+            
+            .question {
+                font-size: 22px;
+                margin: 10px 0;
+            }
+            
+            button {
+                padding: 12px 24px;
+                font-size: 18px;
+            }
+        }
+        
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0a1128;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .loading-icon {
+            width: 80px;
+            height: 80px;
+            border: 8px solid rgba(65, 105, 225, 0.3);
+            border-top: 8px solid #4169e1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fade-out {
+            animation: fadeOut 0.5s ease-in-out forwards;
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            100% { opacity: 0; visibility: hidden; }
+        }
+        
+        .sound-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(10, 25, 47, 0.8);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 100;
+        }
+        
+        .sound-icon {
+            width: 24px;
+            height: 24px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+        }
+        
+        .sound-off .sound-icon {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>');
+        }
+        
+        .sound-warning {
+            background-color: rgba(255, 193, 7, 0.8);
+            color: black;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+    </style>
+    <script type="application/json" id="manifest">
+    {
+      "name": "משחק חלל מספרים לבן",
+      "short_name": "משחק חלל",
+      "description": "משחק לימודי בחלל לתרגול מספרים",
+      "start_url": "./",
+      "display": "standalone",
+      "background_color": "#0a1128",
+      "theme_color": "#0a1128",
+      "icons": [
+        {
+          "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAMAAABrrFhUAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAMAUExURQAAAICfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyYCfyV9E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",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+    </script>
+</head>
+<body>
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-icon"></div>
+        <div>טוען משחק...</div>
+    </div>
+    
+    <div class="sound-button" id="soundToggle">
+        <div class="sound-icon"></div>
+    </div>
+    
+    <div class="stars" id="stars"></div>
+    <div class="spaceship"></div>
+    <div class="astronaut"></div>
+    
+    <div class="container hidden" id="startScreen">
+        <h1>משחק חלל מספרים</h1>
+        <p id="introText">היי בן, אני שמח לראות אותך. סיפרתי לכל החברים שלי בחללית שאתה ממש טוב בחשבון וכולם רוצים להיות חברים שלך. מפקד החללית שלי ביקש שתעזור לנו עם כתיבה של כמה מספרים. אמרתי לו שכמו שאני מכיר אותך אתה ילד טוב שתמיד עוזר ותעזור לנו גם עכשיו והוא שמח. אז בוא נתחיל</p>
+        <div class="sound-warning">לחץ על כפתור ההפעלה/כיבוי בפינה הימנית העליונה כדי להפעיל את השמע</div>
+        <button class="start-button" id="startButton">התחל משחק</button>
+    </div>
+    
+    <div class="container hidden" id="gameScreen">
+        <div class="question" id="questionText"></div>
+        <input inputmode="numeric" pattern="[0-9]*" type="number" class="answer-input" id="answerInput" min="20" max="99">
+        <div class="feedback" id="feedbackText"></div>
+        
+        <!-- מקלדת מספרית מובנית -->
+        <div class="number-pad" id="numberPad">
+            <button class="number-key" data-key="1">1</button>
+            <button class="number-key" data-key="2">2</button>
+            <button class="number-key" data-key="3">3</button>
+            <button class="number-key" data-key="4">4</button>
+            <button class="number-key" data-key="5">5</button>
+            <button class="number-key" data-key="6">6</button>
+            <button class="number-key" data-key="7">7</button>
+            <button class="number-key" data-key="8">8</button>
+            <button class="number-key" data-key="9">9</button>
+            <button class="number-key" data-key="0">0</button>
+            <button class="number-key delete-key" data-key="delete">מחק</button>
+            <button class="number-key submit-key" data-key="submit">שלח</button>
+        </div>
+    </div>
+    
+    <div class="container hidden" id="breakScreen">
+        <h1>זמן להפסקה</h1>
+        <p>בן, אם אתה מוכן לעזור לנו עם עוד תרגילים בבקשה תלחץ עם העכבר על הכפתור הירוק ואם אתה רוצה לנוח תלחץ על הכפתור האדום</p>
+        <div>
+            <button class="continue-button" id="continueButton">המשך</button>
+            <button class="rest-button" id="restButton">מנוחה</button>
+        </div>
+    </div>
+    
+    <div class="container hidden" id="restScreen">
+        <h1>זמן מנוחה</h1>
+        <p>בסדר בן, תנוח קצת, וכשתרצה לחזור להמשיך לעזור לנו אנחנו מאוד נשמח</p>
+        <button class="continue-button" id="backToGameButton">חזרה למשחק</button>
+    </div>
+    
+    <div class="container hidden" id="completionScreen">
+        <h1>סיימת!</h1>
+        <div class="completion-message">כל הכבוד בן! סיימת את כל 30 השאלות!</div>
+        <button class="start-button" id="restartButton">שחק שוב</button>
+    </div>
+
+    <script>
+        // מצב ההקראה (פעיל/כבוי)
+        let soundEnabled = true;
+        
+        // כמה יסודות של המשחק
+        let currentQuestion = 0;
+        let totalQuestions = 30;
+        const numberRangeMin = 20;
+        const numberRangeMax = 99;
+        let currentNumber;
+        
+        // משפטי עידוד
+        const encouragements = [
+            "תודה בן, אני מוסר למפקד שלי, תודה",
+            "תודה בן, אתה ממש עוזר לכולנו",
+            "תודה בן, כל צוות החללית אומר לך תודה",
+            "תודה בן, אני שמח שאתה חבר שלי ועוזר לי",
+            "תודה בן, אתה באמת חכם כמו שאמא שלך אמרה",
+            "תודה בן, כל האנשים פה בחללית שמחים",
+            "תודה בן, תמשיך להיות טוב בחשבון ולעזור לנו",
+            "תודה בן, אנחנו כבר חברים טובים ואני שמח כי אתה טוב בחשבון",
+            "תודה בן, אתה כבר יכול להיות איש צוות בחללית האנטרפרייז",
+            "תודה בן, כמה כיף שאתה חכם ועוזר לנו",
+            "תודה בן, בזכות העזרה שלך אנחנו נוכל להגיע לכוכב ממש גדול ורחוק"
+        ];
+        
+        let lastEncouragementIndex = -1;
+        
+        // הקראת טקסט
+        function speak(text) {
+            if ('speechSynthesis' in window && soundEnabled) {
+                try {
+                    // ביטול כל הקראה קודמת כדי למנוע חפיפות
+                    window.speechSynthesis.cancel();
+                    
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'he-IL';
+                    utterance.rate = 0.9; // מעט יותר איטי מהרגיל לשיפור הבנה
+                    utterance.volume = 1.0; // עוצמת קול מקסימלית
+                    
+                    // טיפול ספציפי לאנדרואיד - האזנה לאירוע מוכנות
+                    const voicesChanged = () => {
+                        // בחירת קול עברי אם קיים
+                        const voices = window.speechSynthesis.getVoices();
+                        const hebrewVoice = voices.find(voice => 
+                            voice.lang.includes('he') || voice.lang.includes('iw')
+                        );
+                        if (hebrewVoice) {
+                            utterance.voice = hebrewVoice;
+                        }
+                        window.speechSynthesis.speak(utterance);
+                    };
+
+                    // בדיקה אם הקולות כבר זמינים
+                    if (window.speechSynthesis.getVoices().length) {
+                        voicesChanged();
+                    } else {
+                        // אם לא, נחכה לאירוע טעינת הקולות
+                        window.speechSynthesis.onvoiceschanged = voicesChanged;
+                    }
+                    
+                    // טיפול בבעיית השהייה באנדרואיד - הפעלה מחדש אם נעצר
+                    const resumeSpeaking = setInterval(() => {
+                        if (!window.speechSynthesis.speaking) {
+                            clearInterval(resumeSpeaking);
+                        } else {
+                            window.speechSynthesis.pause();
+                            window.speechSynthesis.resume();
+                        }
+                    }, 5000);
+                    
+                    // ניקוי הטיימר כשההקראה מסתיימת
+                    utterance.onend = function() {
+                        clearInterval(resumeSpeaking);
+                        if (this._onend) {
+                            this._onend();
+                        }
+                    };
+                    
+                    // שומר את האירוע המקורי
+                    utterance._onend = null;
+                    Object.defineProperty(utterance, 'onend', {
+                        get: function() { return this._onend; },
+                        set: function(fn) { this._onend = fn; }
+                    });
+                    
+                    return utterance;
+                } catch (error) {
+                    console.error('Speech synthesis error:', error);
+                    playFallbackSound();
+                }
+            }
+            
+            // אם הקראה לא פעילה או נכשלה, ניצור אובייקט מדומה עם אירוע סיום
+            const dummyUtterance = {
+                onend: null
+            };
+            
+            // נפעיל את האירוע לאחר השהייה קצרה
+            setTimeout(() => {
+                if (dummyUtterance.onend) {
+                    dummyUtterance.onend();
+                }
+            }, 1000);
+            
+            return dummyUtterance;
+        }
+        
+        // צליל חלופי למקרה שהקראה לא עובדת
+        function playFallbackSound() {
+            try {
+                // יצירת צליל קצר באמצעות Web Audio API
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 440; // תדר "לה" (A4)
+                gainNode.gain.value = 0.1;
+                
+                oscillator.start();
+                setTimeout(() => {
+                    oscillator.stop();
+                }, 200);
+            } catch (e) {
+                console.error('Fallback sound error:', e);
+            }
+        }
+        
+        // יצירת כוכבים
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            const numStars = 100;
+            
+            for (let i = 0; i < numStars; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                
+                // גודל אקראי בין 1 ל-3 פיקסלים
+                const size = Math.random() * 2 + 1;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                
+                // מיקום אקראי
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                
+                // הבהוב אקראי
+                star.style.opacity = Math.random();
+                star.style.animation = `twinkle ${Math.random() * 5 + 3}s infinite ease-in-out`;
+                
+                starsContainer.appendChild(star);
+            }
+        }
+        
+        // המרת מספר למחרוזת בעברית
+        function numberToHebrewString(num) {
+            const units = ['', 'אחת', 'שתיים', 'שלוש', 'ארבע', 'חמש', 'שש', 'שבע', 'שמונה', 'תשע'];
+            const teens = ['עשר', 'אחת עשרה', 'שתים עשרה', 'שלוש עשרה', 'ארבע עשרה', 'חמש עשרה', 'שש עשרה', 'שבע עשרה', 'שמונה עשרה', 'תשע עשרה'];
+            const tens = ['', 'עשר', 'עשרים', 'שלושים', 'ארבעים', 'חמישים', 'שישים', 'שבעים', 'שמונים', 'תשעים'];
+            
+            if (num < 10) {
+                return units[num];
+            } else if (num < 20) {
+                return teens[num - 10];
+            } else {
+                const unit = num % 10;
+                const ten = Math.floor(num / 10);
+                
+                if (unit === 0) {
+                    return tens[ten];
+                } else {
+                    return tens[ten] + ' ו' + units[unit];
+                }
+            }
+        }
+        
+        // יצירת שאלה חדשה
+        function generateQuestion() {
+            currentNumber = Math.floor(Math.random() * (numberRangeMax - numberRangeMin + 1)) + numberRangeMin;
+            const hebrewNumber = numberToHebrewString(currentNumber);
+            document.getElementById('questionText').textContent = `בן, איך כותבים בבקשה את המספר ${hebrewNumber}?`;
+            speak(document.getElementById('questionText').textContent);
+            document.getElementById('feedbackText').textContent = '';
+            document.getElementById('answerInput').value = '';
+            document.getElementById('answerInput').focus();
+        }
+        
+        // בדיקת תשובה
+        function checkAnswer() {
+            const userAnswer = parseInt(document.getElementById('answerInput').value);
+            
+            if (isNaN(userAnswer)) {
+                return; // לא להמשיך אם הערך אינו מספר
+            }
+            
+            if (userAnswer === currentNumber) {
+                // תשובה נכונה
+                currentQuestion++;
+                let encouragementIndex;
+                do {
+                    encouragementIndex = Math.floor(Math.random() * encouragements.length);
+                } while (encouragementIndex === lastEncouragementIndex && encouragements.length > 1);
+                
+                lastEncouragementIndex = encouragementIndex;
+                const encouragement = encouragements[encouragementIndex];
+                document.getElementById('feedbackText').textContent = encouragement;
+                
+                // הקראת משפט העידוד ומעבר לשאלה הבאה רק אחרי סיום ההקראה
+                const utterance = speak(encouragement);
+                
+                utterance.onend = function() {
+                    if (currentQuestion % 10 === 0 && currentQuestion < totalQuestions) {
+                        // הצג מסך הפסקה אחרי כל 10 שאלות
+                        document.getElementById('gameScreen').classList.add('hidden');
+                        document.getElementById('breakScreen').classList.remove('hidden');
+                        speak(document.querySelector('#breakScreen p').textContent);
+                    } else if (currentQuestion >= totalQuestions) {
+                        // סיום המשחק
+                        document.getElementById('gameScreen').classList.add('hidden');
+                        document.getElementById('completionScreen').classList.remove('hidden');
+                        speak(document.querySelector('.completion-message').textContent);
+                    } else {
+                        // המשך למספר הבא
+                        generateQuestion();
+                    }
+                };
+            } else {
+                // תשובה שגויה
+                const errorMessage = "בן, תנסה שוב בבקשה, אני מאמין בך שתוכל לתקן את התשובה";
+                document.getElementById('feedbackText').textContent = errorMessage;
+                speak(errorMessage);
+                
+                setTimeout(() => {
+                    const repeatQuestion = `בן תכתוב בבקשה את המספר ${numberToHebrewString(currentNumber)}.`;
+                    document.getElementById('questionText').textContent = repeatQuestion;
+                    speak(repeatQuestion);
+                    document.getElementById('answerInput').value = '';
+                    document.getElementById('answerInput').focus();
+                }, 2000);
+            }
+        }
+        
+        // הוספת מספר לשדה
+        function appendNumber(number) {
+            const input = document.getElementById('answerInput');
+            const currentValue = input.value;
+            
+            // מגבלה של מקסימום 2 ספרות (20-99)
+            if (currentValue.length < 2) {
+                input.value = currentValue + number;
+            }
+        }
+        
+        // מחיקת ספרה אחרונה
+        function deleteLastDigit() {
+            const input = document.getElementById('answerInput');
+            input.value = input.value.slice(0, -1);
+        }
+        
+        // טיפול במקלדת המספרית
+        function setupNumberPad() {
+            const numberPad = document.getElementById('numberPad');
+            
+            numberPad.addEventListener('click', (e) => {
+                if (e.target.classList.contains('number-key')) {
+                    const key = e.target.getAttribute('data-key');
+                    
+                    if (key === 'delete') {
+                        deleteLastDigit();
+                    } else if (key === 'submit') {
+                        checkAnswer();
+                    } else {
+                        appendNumber(key);
+                    }
+                }
+            });
+        }
+        
+        // שינוי מצב השמע
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const soundToggle = document.getElementById('soundToggle');
+            
+            if (soundEnabled) {
+                soundToggle.classList.remove('sound-off');
+            } else {
+                soundToggle.classList.add('sound-off');
+                window.speechSynthesis.cancel(); // ביטול הקראה נוכחית אם קיימת
+            }
+            
+            // שמירת העדפת השמע
+            saveSoundPreference(soundEnabled);
+        }
+        
+        // טעינת העדפת השמע - עם טיפול בשגיאות
+        function loadSoundPreference() {
+            try {
+                if (window.localStorage) {
+                    const savedPreference = localStorage.getItem('soundEnabled');
+                    if (savedPreference !== null) {
+                        soundEnabled = (savedPreference === 'true');
+                        if (!soundEnabled) {
+                            document.getElementById('soundToggle').classList.add('sound-off');
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log('localStorage לא זמין, משתמש בהגדרות ברירת מחדל');
+                // המשך עם הגדרות ברירת מחדל
+            }
+        }
+        
+        // שמירת העדפת השמע - עם טיפול בשגיאות
+        function saveSoundPreference(value) {
+            try {
+                if (window.localStorage) {
+                    localStorage.setItem('soundEnabled', value);
+                }
+            } catch (e) {
+                console.log('לא ניתן לשמור את העדפות השמע');
+                // המשך ללא שמירה
+            }
+        }
+        
+        // התקנת PWA - עם טיפול בשגיאות
+        function setupPWA() {
+            try {
+                // יצירת אלמנט link עבור manifest
+                const manifestJson = document.getElementById('manifest').textContent;
+                const manifestBlob = new Blob([manifestJson], {type: 'application/json'});
+                const manifestURL = URL.createObjectURL(manifestBlob);
+                
+                const manifestLink = document.createElement('link');
+                manifestLink.rel = 'manifest';
+                manifestLink.href = manifestURL;
+                document.head.appendChild(manifestLink);
+                
+                // הוספת service worker אם זמין
+                if ('serviceWorker' in navigator && navigator.serviceWorker) {
+                    try {
+                        window.addEventListener('load', () => {
+                            navigator.serviceWorker.register('sw.js').catch(err => {
+                                console.log('רישום ServiceWorker נכשל - זה בסדר, המשחק עדיין יעבוד');
+                            });
+                        });
+                        
+                        // יצירת service worker בזמן ריצה
+                        const swContent = `
+                            self.addEventListener('install', (e) => {
+                                e.waitUntil(
+                                    caches.open('space-math-game-v1').then((cache) => {
+                                        return cache.addAll([
+                                            './'
+                                        ]);
+                                    })
+                                );
+                            });
+                            
+                            self.addEventListener('fetch', (e) => {
+                                e.respondWith(
+                                    caches.match(e.request).then((response) => {
+                                        return response || fetch(e.request);
+                                    })
+                                );
+                            });
+                        `;
+                        
+                        const swBlob = new Blob([swContent], {type: 'text/javascript'});
+                        const swURL = URL.createObjectURL(swBlob);
+                        
+                        // ניסיון עדכון ה-URL של ה-service worker
+                        try {
+                            navigator.serviceWorker.__proto__.register = new Proxy(
+                                navigator.serviceWorker.__proto__.register, {
+                                apply: (target, thisArg, args) => {
+                                    // החלפת הארגומנט הראשון ב-URL שיצרנו
+                                    args[0] = swURL;
+                                    return Reflect.apply(target, thisArg, args);
+                                }
+                            });
+                        } catch (e) {
+                            console.log('לא ניתן לעדכן את רישום service worker');
+                        }
+                    } catch (e) {
+                        console.log('הדפדפן לא תומך ב-Service Worker או שאין הרשאות מתאימות');
+                    }
+                }
+            } catch (e) {
+                console.log('לא ניתן להגדיר PWA - המשחק ירוץ כדף רגיל');
+            }
+        }
+        
+        // אתחול המשחק
+        function initGame() {
+            // הסרת מסך הטעינה
+            setTimeout(() => {
+                const loadingScreen = document.getElementById('loadingScreen');
+                loadingScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    document.getElementById('startScreen').classList.remove('hidden');
+                }, 500);
+            }, 1500);
+            
+            createStars();
+            setupNumberPad();
+            loadSoundPreference();
+            setupPWA();
+            
+            // טיפול בלחיצה על כפתור השמע
+            document.getElementById('soundToggle').addEventListener('click', () => {
+                toggleSound();
+                
+                // אילוץ אינטראקציה עם מערכת השמע (נדרש במכשירים ניידים)
+                if (soundEnabled) {
+                    // התחלה של אינטראקציה עם מערכת השמע
+                    playFallbackSound();
+                    
+                    // יוזם טעינה של מנוע ההקראה
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+                        const tempUtterance = new SpeechSynthesisUtterance('');
+                        window.speechSynthesis.speak(tempUtterance);
+                    }
+                    
+                    // הודעה על הפעלת השמע
+                    document.getElementById('feedbackText').textContent = "השמע הופעל";
+                    setTimeout(() => {
+                        document.getElementById('feedbackText').textContent = "";
+                    }, 1500);
+                } else {
+                    // הודעה על כיבוי השמע
+                    document.getElementById('feedbackText').textContent = "השמע כבוי";
+                    setTimeout(() => {
+                        document.getElementById('feedbackText').textContent = "";
+                    }, 1500);
+                }
+            });
+            
+            // הוספת אירוע לחיצה על כפתור התחלה
+            document.getElementById('startButton').addEventListener('click', () => {
+                // אינטראקציה עם מערכת השמע - נדרש באנדרואיד
+                if ('speechSynthesis' in window && soundEnabled) {
+                    // ניסיון אקטיבציה של השמע
+                    playFallbackSound();
+                    const tempUtterance = new SpeechSynthesisUtterance('');
+                    window.speechSynthesis.speak(tempUtterance);
+                }
+                
+                // טיימראאוט קצר לאפשר לדפדפן להתחיל את האינטראקציה עם השמע
+                setTimeout(() => {
+                    // הסרת כל ההקראות שבתור כדי למנוע חפיפה
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+                    }
+                    
+                    // נמתין לסיום ההקראה של טקסט הפתיחה
+                    const utterance = speak(document.getElementById('introText').textContent);
+                    
+                    // מעבר למסך השאלות רק אחרי סיום ההקראה
+                    utterance.onend = function() {
+                        document.getElementById('startScreen').classList.add('hidden');
+                        document.getElementById('gameScreen').classList.remove('hidden');
+                        generateQuestion();
+                    };
+                }, 300);
+            });
+            
+            // בדיקת תשובה בלחיצה על אנטר
+            document.getElementById('answerInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+            
+            // כפתור המשך אחרי הפסקה
+            document.getElementById('continueButton').addEventListener('click', () => {
+                document.getElementById('breakScreen').classList.add('hidden');
+                document.getElementById('gameScreen').classList.remove('hidden');
+                const continueMessage = "בן, אני ממש שמח שאתה ממשיך לעזור לנו, עם העזרה שלך אנחנו אפילו נוכל להגיע לכוכב אוראנוס";
+                document.getElementById('feedbackText').textContent = continueMessage;
+                const utterance = speak(continueMessage);
+                
+                utterance.onend = function() {
+                    document.getElementById('feedbackText').textContent = '';
+                    generateQuestion();
+                };
+            });
+            
+            // כפתור מנוחה
+            document.getElementById('restButton').addEventListener('click', () => {
+                document.getElementById('breakScreen').classList.add('hidden');
+                document.getElementById('restScreen').classList.remove('hidden');
+                speak(document.querySelector('#restScreen p').textContent);
+            });
+            
+            // כפתור חזרה למשחק
+            document.getElementById('backToGameButton').addEventListener('click', () => {
+                document.getElementById('restScreen').classList.add('hidden');
+                document.getElementById('gameScreen').classList.remove('hidden');
+                generateQuestion();
+            });
+            
+            // כפתור התחלה מחדש
+            document.getElementById('restartButton').addEventListener('click', () => {
+                currentQuestion = 0;
+                document.getElementById('completionScreen').classList.add('hidden');
+                document.getElementById('gameScreen').classList.remove('hidden');
+                generateQuestion();
+            });
+            
+            // טיפול בשינוי מצב המסך למניעת בעיות אורינטציה
+            window.addEventListener('resize', function() {
+                // גלילה לחלק העליון כדי למנוע בעיות בעת שינוי אורינטציה
+                window.scrollTo(0, 0);
+            });
+            
+            // מניעת הגדלה במכשירים ניידים
+            document.addEventListener('gesturestart', function(e) {
+                e.preventDefault();
+            });
+        }
+        
+        // נוהל נוסף למניעת פינץ' זום
+        document.addEventListener('touchmove', function(e) {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        // הפעלת המשחק כשהדף נטען
+        window.onload = initGame;
+    </script>
+</body>
+</html>
